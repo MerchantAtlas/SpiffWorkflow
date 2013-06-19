@@ -14,6 +14,7 @@ from ReleaseMutex import ReleaseMutex
 from Simple import Simple
 from StartTask import StartTask
 from SubWorkflow import SubWorkflow
+from SubWorkflow2 import SubWorkflow2
 from ThreadMerge import ThreadMerge
 from ThreadSplit import ThreadSplit
 from Transform import Transform
