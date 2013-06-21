@@ -47,9 +47,9 @@ class SubWorkflow2(TaskSpec):
         :type  workflow_spec: WorkflowSpec
         :param workflow_spec: A WorkflowSpec to generate a Workflow from.
         :type  in_assign: list(str)
-        :param in_assign: The names of data fields to carry over.
+        :param in_assign: A list of Assign objects for fields to carry in
         :type  out_assign: list(str)
-        :param out_assign: The names of data fields to carry back.
+        :param out_assign: A list of Assign objects for fields to carry back.
         :type  kwargs: dict
         :param kwargs: See L{SpiffWorkflow.specs.TaskSpec}.
         """
@@ -133,5 +133,5 @@ class SubWorkflow2(TaskSpec):
         return serializer._serialize_sub_workflow2(self)
 
     @classmethod
-    def deserialize(self, serializer, wf_spec, s_state):
+    def deserialize(cls, serializer, wf_spec, s_state):
         return serializer._deserialize_sub_workflow2(wf_spec, s_state)

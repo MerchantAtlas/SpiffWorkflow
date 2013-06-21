@@ -11,8 +11,12 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-import marshal
-from base64 import b64encode, b64decode
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 from SpiffWorkflow import Workflow
 from SpiffWorkflow.util.impl import get_class
 from SpiffWorkflow.Task import Task
@@ -23,18 +27,18 @@ from SpiffWorkflow.storage.Serializer import Serializer
 
 class DictionarySerializer(Serializer):
     def _serialize_dict(self, thedict):
-        return dict((k, b64encode(marshal.dumps(v)))
+        return dict((k, pickle.dumps(v))
                     for k, v in thedict.iteritems())
 
     def _deserialize_dict(self, s_state):
-        return dict((k, marshal.loads(b64decode(v)))
+        return dict((k, pickle.loads(v))
                     for k, v in s_state.iteritems())
 
-    def _serialize_list(self, thedict):
-        return [(k, b64encode(marshal.dumps(v))) for k, v in thedict]
+    def _serialize_list(self, thelist):
+        return [pickle.dumps(v) for v in thelist]
 
     def _deserialize_list(self, s_state):
-        return [(k, b64decode(marshal.loads(v))) for k, v in s_state]
+        return [pickle.loads(v) for v in s_state]
 
     def _serialize_attrib(self, attrib):
         return attrib.name
@@ -239,7 +243,7 @@ class DictionarySerializer(Serializer):
     def _serialize_join(self, spec):
         s_state = self._serialize_task_spec(spec)
         s_state['split_task'] = spec.split_task
-        s_state['threshold'] = b64encode(marshal.dumps(spec.threshold))
+        s_state['threshold'] = pickle.dumps(spec.threshold)
         s_state['cancel_remaining'] = spec.cancel_remaining
         return s_state
 
@@ -247,7 +251,7 @@ class DictionarySerializer(Serializer):
         spec = Join(wf_spec,
                     s_state['name'],
                     split_task = s_state['split_task'],
-                    threshold = marshal.loads(b64decode(s_state['threshold'])),
+                    threshold = pickle.loads(s_state['threshold']),
                     cancel = s_state['cancel_remaining'])
         self._deserialize_task_spec(wf_spec, s_state, spec = spec)
         return spec
@@ -335,11 +339,12 @@ class DictionarySerializer(Serializer):
         return s_state
 
     def _deserialize_sub_workflow2(self, wf_spec, s_state):
-        sub_wf_spec = self.deserialize_workflow_spec(s_state['workflow_spec'])
+        sub_wf_spec = self.deserialize_workflow_spec(s_state['workflow_spec'],
+                                                     parent=wf_spec)
         spec = SubWorkflow2(wf_spec, s_state['name'], sub_wf_spec)
         self._deserialize_task_spec(wf_spec, s_state, spec=spec)
-        spec.in_assign = self._deserialize_dict(s_state['in_assign'])
-        spec.out_assign = self._deserialize_dict(s_state['out_assign'])
+        spec.in_assign = self._deserialize_list(s_state['in_assign'])
+        spec.out_assign = self._deserialize_list(s_state['out_assign'])
         return spec
 
     def _serialize_thread_merge(self, spec):
@@ -402,12 +407,14 @@ class DictionarySerializer(Serializer):
 
     def deserialize_workflow_spec(self, s_state, **kwargs):
         spec = WorkflowSpec(s_state['name'], filename=s_state['file'])
+        parent = kwargs.pop("parent", None)
         spec.description = s_state['description']
         # Handle Start Task
         spec.start = None
         del spec.task_specs['Start']
         start_task_spec_state = s_state['task_specs']['Start']
-        start_task_spec = StartTask.deserialize(self, spec, start_task_spec_state)
+        start_task_spec = StartTask.deserialize(self, spec,
+                                                start_task_spec_state)
         spec.start = start_task_spec
         spec.task_specs['Start'] = start_task_spec
 
@@ -418,10 +425,26 @@ class DictionarySerializer(Serializer):
             task_spec = task_spec_cls.deserialize(self, spec, task_spec_state)
             spec.task_specs[name] = task_spec
         for name, task_spec in spec.task_specs.iteritems():
-            task_spec.inputs = [spec.get_task_spec_from_name(t)
-                                for t in task_spec.inputs]
-            task_spec.outputs = [spec.get_task_spec_from_name(t)
-                                 for t in task_spec.outputs]
+            temp = []
+            for t in task_spec.inputs:
+                try:
+                    temp.append(spec.get_task_spec_from_name(t))
+                except KeyError:
+                    if parent:
+                        temp.append(
+                            parent.get_task_spec_from_name(t))
+            task_spec.inputs = temp
+
+            temp = []
+            for t in task_spec.outputs:
+                try:
+                    temp.append(spec.get_task_spec_from_name(t))
+                except KeyError:
+                    if parent:
+                        temp.append(
+                            parent.get_task_spec_from_name(t))
+            task_spec.outputs = temp
+
         assert spec.start is spec.get_task_spec_from_name('Start')
         return spec
 
