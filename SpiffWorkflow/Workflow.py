@@ -15,12 +15,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 import logging
 from mutex import mutex
+
 from SpiffWorkflow.exceptions import WorkflowException
 from SpiffWorkflow import specs
 from SpiffWorkflow.util.event import Event
 from Task import Task
 
 LOG = logging.getLogger(__name__)
+
 
 class Workflow(object):
     """
@@ -76,7 +78,7 @@ class Workflow(object):
         iter = Task.Iterator(self.task_tree, mask)
         try:
             iter.next()
-        except:
+        except Exception:
             # No waiting tasks found.
             return True
         return False
@@ -211,16 +213,16 @@ class Workflow(object):
         blacklist = []
         if pick_up and self.last_task is not None:
             try:
-                iter = Task.Iterator(self.last_task, Task.READY)
-                next = iter.next()
-            except:
-                next = None
+                iter_ = Task.Iterator(self.last_task, Task.READY)
+                next_ = iter_.next()
+            except Exception:
+                next_ = None
             self.last_task = None
-            if next is not None:
-                if next.complete():
-                    self.last_task = next
+            if next_ is not None:
+                if next_.complete():
+                    self.last_task = next_
                     return True
-                blacklist.append(next)
+                blacklist.append(next_)
 
         # Walk through all ready tasks.
         for task in Task.Iterator(self.task_tree, Task.READY):

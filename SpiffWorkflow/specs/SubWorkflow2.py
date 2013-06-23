@@ -83,6 +83,9 @@ class SubWorkflow2(TaskSpec):
             my_task.children.insert(0, child)
             child.parent = my_task
 
+        for child in Task.Iterator(subworkflow.task_tree):
+            child.workflow = my_task.workflow.outer_workflow
+
         # Find the last child of the subworkflow
         tails = []
         for task in Task.Iterator(subworkflow.task_tree):

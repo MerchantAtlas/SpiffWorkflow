@@ -110,6 +110,7 @@ class TaskSpec(object):
         self.completed_event = Event()
         self.cancelled_event = Event()
         self.finished_event  = Event()
+        self.failure_event   = Event()
 
         self._parent._add_notify(self)
         self.data.update(self.defines)
@@ -356,6 +357,23 @@ class TaskSpec(object):
         """
         self.cancelled_event.emit(my_task.workflow, my_task)
 
+    def _on_cancel_by_fail(self, my_task):
+        """
+        This gives special treatment to cancels that happen because of a
+        failure. Some TaskSpecs may want to handle this in a specific way.
+        """
+        # Emit the cancelled event since this is still a cancel
+        self.cancelled_event.emit(my_task.workflow, my_task)
+
+    def _on_failure(self, my_task):
+        """
+        May be called by a task to mark the operation as a failure
+
+        :type  my_task: Task
+        :param my_task: The associated task in the task tree.
+        """
+        self.failure_event.emit(my_task.workflow, my_task)
+
     def _on_trigger(self, my_task):
         """
         May be called by another task to trigger a task-specific
@@ -393,6 +411,8 @@ class TaskSpec(object):
                 my_task.workflow.outer_workflow.task_tree.dump()
 
         self.completed_event.emit(my_task.workflow, my_task)
+
+    def _on_complete_before_hook(self, my_task):
         return True
 
     def _on_complete_hook(self, my_task):

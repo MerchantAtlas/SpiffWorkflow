@@ -80,8 +80,9 @@ class Task(object):
     READY     = 16
     COMPLETED = 32
     CANCELLED = 64
+    FAILED = 128
 
-    FINISHED_MASK      = CANCELLED | COMPLETED
+    FINISHED_MASK      = CANCELLED | COMPLETED | FAILED
     DEFINITE_MASK      = FUTURE | WAITING | READY | FINISHED_MASK
     PREDICTED_MASK     = FUTURE | LIKELY | MAYBE
     NOT_FINISHED_MASK  = PREDICTED_MASK | WAITING | READY
@@ -93,7 +94,8 @@ class Task(object):
                    CANCELLED: 'CANCELLED',
                    COMPLETED: 'COMPLETED',
                    LIKELY:    'LIKELY',
-                   MAYBE:     'MAYBE'}
+                   MAYBE:     'MAYBE',
+                   FAILED:    'FAILED'}
 
     class Iterator(object):
         """
@@ -564,11 +566,40 @@ class Task(object):
         self._drop_children()
         self.task_spec._on_cancel(self)
 
+    def _cancel_by_fail(self):
+        """
+        This gives special treatment to cancels that happen because of a
+        failure. Some Tasks may want to handle this in a specific way.
+        """
+        # If this task isn't finished, cancel it
+        if not self._is_finished():
+            self._set_state(self.CANCELLED)
+            self.task_spec._on_cancel_by_fail(self)
+
+        # Any children of this task should be cancelled also
+        for child in self.children:
+            child._cancel_by_fail()
+
+    def fail(self, failure_message=None):
+        """
+        Fails the item, and cancels any children
+        """
+        if failure_message:
+            self._set_internal_data(failure_message=failure_message)
+        self._set_state(self.FAILED)
+        for child in self.children:
+            child._cancel_by_fail()
+        self.task_spec._on_failure(self)
+
     def complete(self):
         """
         Called by the associated task to let us know that its state
         has changed (e.g. from FUTURE to COMPLETED.)
         """
+        result = self.task_spec._on_complete_before_hook(self)
+        if not result:
+            return False
+
         self._set_state(self.COMPLETED)
         return self.task_spec._on_complete(self)
 

@@ -230,6 +230,19 @@ class DictionarySerializer(Serializer):
         self._deserialize_task_spec(wf_spec, s_state, spec=spec)
         return spec
 
+    def _serialize_function(self, spec):
+        s_state = self._serialize_task_spec(spec)
+        s_state['function'] = pickle.dumps(spec.function)
+        s_state['args'] = self._serialize_list(spec.args)
+        return s_state
+
+    def _deserialize_function(self, wf_spec, s_state):
+        spec = Function(wf_spec, s_state['name'],
+                        pickle.loads(s_state['function']),
+                        self._deserialize_list(s_state['args']))
+        self._deserialize_task_spec(wf_spec, s_state, spec=spec)
+        return spec
+
     def _serialize_gate(self, spec):
         s_state = self._serialize_task_spec(spec)
         s_state['context'] = spec.context

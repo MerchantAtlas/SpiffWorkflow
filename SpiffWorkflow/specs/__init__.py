@@ -5,6 +5,7 @@ from Celery import Celery
 from Choose import Choose
 from ExclusiveChoice import ExclusiveChoice
 from Execute import Execute
+from Function import Function
 from Gate import Gate
 from Join import Join
 from Merge import Merge
