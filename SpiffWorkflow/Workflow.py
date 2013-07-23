@@ -224,6 +224,25 @@ class Workflow(object):
                     return True
                 blacklist.append(next_)
 
+        # Walk through all waiting tasks.
+        for task in Task.Iterator(self.task_tree, Task.WAITING):
+            task.task_spec._update_state(task)
+            if not task._has_state(Task.WAITING):
+                self.last_task = task
+                return True
+
+        # Walk through all Incomplete tasks.
+        for task in Task.Iterator(self.task_tree, Task.INCOMPLETE):
+            # If the task is in the blacklist, that means it was the last to
+            # run and was marked incomplete. No need to run it twice.
+            if task in blacklist:
+                continue
+
+            task.complete()
+            if not task._has_state(Task.INCOMPLETE):
+                self.last_task = task
+                return True
+
         # Walk through all ready tasks.
         for task in Task.Iterator(self.task_tree, Task.READY):
             for blacklisted_task in blacklist:
@@ -234,12 +253,6 @@ class Workflow(object):
                 return True
             blacklist.append(task)
 
-        # Walk through all waiting tasks.
-        for task in Task.Iterator(self.task_tree, Task.WAITING):
-            task.task_spec._update_state(task)
-            if not task._has_state(Task.WAITING):
-                self.last_task = task
-                return True
         return False
 
     def complete_all(self, pick_up=True):

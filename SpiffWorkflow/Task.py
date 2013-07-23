@@ -73,29 +73,31 @@ class Task(object):
     """
     # Note: The states in this list are ordered in the sequence in which
     # they may appear. Do not change.
-    MAYBE     =  1
-    LIKELY    =  2
-    FUTURE    =  4
-    WAITING   =  8
-    READY     = 16
-    COMPLETED = 32
-    CANCELLED = 64
-    FAILED = 128
+    MAYBE =  1
+    LIKELY =  2
+    FUTURE =  4
+    WAITING =  8
+    READY = 16
+    INCOMPLETE = 32
+    COMPLETED = 64
+    CANCELLED = 128
+    FAILED = 256
 
     FINISHED_MASK      = CANCELLED | COMPLETED | FAILED
-    DEFINITE_MASK      = FUTURE | WAITING | READY | FINISHED_MASK
+    DEFINITE_MASK      = FUTURE | WAITING | READY | FINISHED_MASK | INCOMPLETE
     PREDICTED_MASK     = FUTURE | LIKELY | MAYBE
-    NOT_FINISHED_MASK  = PREDICTED_MASK | WAITING | READY
+    NOT_FINISHED_MASK  = PREDICTED_MASK | WAITING | READY | INCOMPLETE
     ANY_MASK           = FINISHED_MASK | NOT_FINISHED_MASK
 
-    state_names = {FUTURE:    'FUTURE',
-                   WAITING:   'WAITING',
-                   READY:     'READY',
+    state_names = {FUTURE: 'FUTURE',
+                   WAITING: 'WAITING',
+                   READY: 'READY',
+                   INCOMPLETE: "INCOMPLETE",
                    CANCELLED: 'CANCELLED',
                    COMPLETED: 'COMPLETED',
-                   LIKELY:    'LIKELY',
-                   MAYBE:     'MAYBE',
-                   FAILED:    'FAILED'}
+                   LIKELY: 'LIKELY',
+                   MAYBE: 'MAYBE',
+                   FAILED: 'FAILED'}
 
     class Iterator(object):
         """
