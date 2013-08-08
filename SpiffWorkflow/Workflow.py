@@ -245,9 +245,18 @@ class Workflow(object):
 
         # Walk through all ready tasks.
         for task in Task.Iterator(self.task_tree, Task.READY):
+            # Check to see if this task is blacklisted.
+            # Blacklist is a bit strong of a word, but it basically means this
+            # task did not complete and all its offspring should be ignored
+            blacklisted = False
             for blacklisted_task in blacklist:
                 if task._is_descendant_of(blacklisted_task):
-                    continue
+                    blacklisted = True
+                    break
+            if blacklisted:
+                continue
+
+            # Attempt to complete the task
             if task.complete():
                 self.last_task = task
                 return True
