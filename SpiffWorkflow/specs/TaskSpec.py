@@ -103,6 +103,10 @@ class TaskSpec(object):
         self.locks       = kwargs.get('lock',        [])
         self.lookahead   = 2  # Maximum number of MAYBE predictions.
 
+        # This is custom to MerchantAtlas' purposes, but won't interfere with
+        # normal operation of the workflow
+        self.component_name = kwargs.get('component_name', None)
+
         # Events.
         self.entered_event   = Event()
         self.reached_event   = Event()

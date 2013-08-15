@@ -15,6 +15,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 import logging
 from mutex import mutex
+import uuid
 
 from SpiffWorkflow.exceptions import WorkflowException
 from SpiffWorkflow import specs
@@ -181,6 +182,25 @@ class Workflow(object):
         """
         return [t for t in Task.Iterator(self.task_tree, state)]
 
+    def get_task_by_id(self, task_id):
+        """
+        Find the task from the given task_id
+
+        :param task_id: The task ID of the task to find
+        :return: Task object
+        """
+        if task_id is None:
+            raise WorkflowException(self.spec, 'task_id is None')
+        # Convert the task_id to UUID if it is a hex string
+        elif not isinstance(task_id, uuid.UUID):
+            task_id = uuid.UUID(hex=task_id)
+
+        for task in Task.Iterator(self.task_tree):
+            if task.id == task_id:
+                return task
+        raise WorkflowException(self.spec, 'A task with the given task_id '
+                                           '(%s) was not found' % task_id)
+
     def complete_task_from_id(self, task_id):
         """
         Runs the task with the given id.
@@ -188,13 +208,8 @@ class Workflow(object):
         :type  task_id: integer
         :param task_id: The id of the Task object.
         """
-        if task_id is None:
-            raise WorkflowException(self.spec, 'task_id is None')
-        for task in self.task_tree:
-            if task.id == task_id:
-                return task.complete()
-        msg = 'A task with the given task_id (%s) was not found' % task_id
-        raise WorkflowException(self.spec, msg)
+        task = self.get_task_by_id(task_id)
+        task.complete()
 
     def complete_next(self, pick_up=True):
         """
