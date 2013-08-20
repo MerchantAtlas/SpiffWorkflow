@@ -42,14 +42,13 @@ class Function(TaskSpec):
         except Exception:
             # If the function raises an exception, save the error and fail
             my_task.fail(failure_message=traceback.format_exc())
-            return False
+            raise
 
     def _on_trigger(self, my_task):
         """If this task is triggered, set the triggered attribute and attempt
         to complete the task
         """
         my_task.triggered = True
-        return my_task.complete()
 
     def serialize(self, serializer):
         return serializer._serialize_function(self)

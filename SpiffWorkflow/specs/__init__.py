@@ -20,6 +20,7 @@ from ThreadMerge import ThreadMerge
 from ThreadSplit import ThreadSplit
 from Transform import Transform
 from Trigger import Trigger
+from WaitFor import WaitForTrigger
 from WorkflowSpec import WorkflowSpec
 
 import inspect

@@ -415,6 +415,7 @@ class TaskSpec(object):
                 my_task.workflow.outer_workflow.task_tree.dump()
 
         self.completed_event.emit(my_task.workflow, my_task)
+        return True
 
     def _on_complete_before_hook(self, my_task):
         return True
